@@ -40,6 +40,7 @@
 
 	<properties>
 		<main-class>Poisson_Editing</main-class>
+		<scijava.jvm.version>1.7</scijava.jvm.version>
 	</properties>
 
 	<repositories>
