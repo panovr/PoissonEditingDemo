@@ -1,13 +1,8 @@
-import graphcut.Terminal;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
-import ij.gui.NewImage;
 import ij.plugin.PlugIn;
-import ij.plugin.filter.PlugInFilter;
-import ij.process.ColorProcessor;
-import ij.process.ImageProcessor;
 
 /**
  * A tutorial demo for demonstrating Poisson editing.
