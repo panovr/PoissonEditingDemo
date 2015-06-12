@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>net.imagej</groupId>
+		<artifactId>pom-imagej</artifactId>
+		<version>7.1.0</version>
+ 		<relativePath />
+	</parent>
+
+	<artifactId>Poisson_Editing</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
+
+	<name>plugins/Poisson_Editing.jar</name>
+	<description>A tutorial project for illustrating poisson editing implementation</description>
+
+	<developers>
+		<developer>
+			<id>ylzhao</id>
+			<name>Yili Zhao</name>
+			<email>panovr@gmail.com</email>
+			<url>http://cs2.swfu.edu.cn/~zyl</url>
+			<organization>Southwest Forestry University</organization>
+			<organizationUrl>http://www.swfu.edu.cn/</organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git://github.com/panovr/PoissonEditingDemo</connection>
+		<developerConnection>scm:git:git@github.com/panovr/PoissonEditingDemo</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/panovr/PoissonEditingDemo</url>
+	</scm>
+
+	<properties>
+		<main-class>Poisson_Editing</main-class>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>imagej.public</id>
+			<url>http://maven.imagej.net/content/groups/public</url>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.la4j</groupId>
+			<artifactId>la4j</artifactId>
+			<version>0.5.5</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${main-class}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
