@@ -31,7 +31,11 @@ public class Poisson_Editing implements PlugIn
 	
 	// hard coding offset coordinate
 	private int ox = 100;
-	private int oy = 100;
+	private int oy = 60;
+	
+	// Matrix solver
+	public MatrixSolver solver;
+	public Thread blendingThread;
 
 	@Override
 	public void run(final String args)
@@ -79,6 +83,9 @@ public class Poisson_Editing implements PlugIn
 			IJ.showMessage("Mask verify failed.");
 			return;
 		}
+		
+		//blendingThread = new Thread(blender);
+		//blendingThread.start();
 		
 		out = PoissonCloning();
 		out.show("Poisson Composite");
@@ -144,6 +151,7 @@ public class Poisson_Editing implements PlugIn
 	 * @param h
 	 * @return
 	 */
+	/*
 	private double[] computeGradient(final double[] in, int w, int h)
 	{
 		double[] gradient = new double[w * h];
@@ -162,7 +170,9 @@ public class Poisson_Editing implements PlugIn
 		
 		return gradient;
 	}
+	*/
 	
+	/*
 	private void SplitRGB(ColorProcessor ip, double[] r, double[] g, double[] b)
 	{
 		final int[] pixels = (int[])ip.getPixels();
@@ -175,10 +185,36 @@ public class Poisson_Editing implements PlugIn
 		    {
 		        int value = pixels[i + hw];
 		        // value is a bit-packed RGB value
-		        r[i + hw] = (value & 0xff) / 255.0;
-		        g[i + hw] = ((value >> 8) & 0xff) / 255.0;
-		        b[i + hw] = ((value >> 16) & 0xff) / 255.0;
+		        r[i + hw] = value & 0xff;
+		        g[i + hw] = (value >> 8) & 0xff;
+		        b[i + hw] = (value >> 16) & 0xff;
 		    }
+		}
+	}
+	*/
+	
+	public void nextIteration()
+	{
+		for (int i = 0; i < 100; i++)
+		{
+			solver.nextIteration();
+		}	
+	}
+	
+	class IterationBlender implements Runnable
+	{
+		public void run()
+		{
+			int iteration = 0;
+			double error;
+			do
+			{
+				error = solver.getError();
+				iteration++;
+				nextIteration();
+			} while (error > 1.0);
+			
+			IJ.log("Did " + iteration + " iterations");
 		}
 	}
 	
@@ -217,27 +253,22 @@ public class Poisson_Editing implements PlugIn
 			}
 		}
 		
-		tsrc.show();
-		tmask.show();
-		
-		IJ.log("" + (tmaskPixels[109587] & 0xff) + " " + tmaskPixels[109588] + " " + tmaskPixels[109589]);
-		
 		// Split Red, Green and Blue channels
-		final double[] tsrcR = new double[dstWidth * dstHeight];
-		final double[] tsrcG = new double[dstWidth * dstHeight];
-		final double[] tsrcB = new double[dstWidth * dstHeight];
+		//final double[] tsrcR = new double[dstWidth * dstHeight];
+		//final double[] tsrcG = new double[dstWidth * dstHeight];
+		//final double[] tsrcB = new double[dstWidth * dstHeight];
 		
-		SplitRGB((ColorProcessor)tsrc.getProcessor(), tsrcR, tsrcG, tsrcB);
+		//SplitRGB((ColorProcessor)tsrc.getProcessor(), tsrcR, tsrcG, tsrcB);
 		
-		final double[] dstR = new double[dstWidth * dstHeight];
-		final double[] dstG = new double[dstWidth * dstHeight];
-		final double[] dstB = new double[dstWidth * dstHeight];
+		//final double[] dstR = new double[dstWidth * dstHeight];
+		//final double[] dstG = new double[dstWidth * dstHeight];
+		//final double[] dstB = new double[dstWidth * dstHeight];
 		
-		SplitRGB((ColorProcessor)dst.getProcessor(), dstR, dstG, dstB);
+		//SplitRGB((ColorProcessor)dst.getProcessor(), dstR, dstG, dstB);
 		
-		final double[] gradientR = computeGradient(tsrcR, dstWidth, dstHeight);
-		final double[] gradientG = computeGradient(tsrcG, dstWidth, dstHeight);
-		final double[] gradientB = computeGradient(tsrcB, dstWidth, dstHeight);
+		//final double[] gradientR = computeGradient(tsrcR, dstWidth, dstHeight);
+		//final double[] gradientG = computeGradient(tsrcG, dstWidth, dstHeight);
+		//final double[] gradientB = computeGradient(tsrcB, dstWidth, dstHeight);
 		
 		// Build mapping from (x,y) to matrix index
 		int count = 0;
@@ -257,8 +288,16 @@ public class Poisson_Editing implements PlugIn
 			}
 		}
 		
-		IJ.log("count = " + count);
+		IJ.log("There are " + count + " variables to be computed.");
 		
+		solver = new MatrixSolver(tsrc, tmask, dst, dstWidth, dstHeight, count, map);
+		IterationBlender blender = new IterationBlender();
+		
+		IJ.log("Starting the iterative solver, please waiting...");
+		
+		blender.run();
+		
+		/*
 		// Build the spare matrix
 		//CRSMatrix A = CRSMatrix.zero(count, count, 5 * count);
 		double[] b1 = new double[count];
@@ -380,48 +419,13 @@ public class Poisson_Editing implements PlugIn
 		final double[] x2 = X.getColumn(1);
 		final double[] x3 = X.getColumn(2);
 		
+		*/
+		
 		IJ.log("Solve Ax = b completed");
 		
-		final ImagePlus out = dst.duplicate();
-		final int[] outpixels = (int[])((ColorProcessor)out.getProcessor()).getPixels();
-		
-		for (int y = 1; y < dstHeight - 1; y++)
-		{
-			int yw = y * dstWidth;
-			
-			for (int x = 1; x < dstWidth - 1; x++)
-			{
-				int id = yw + x;
-				
-				if (tmaskPixels[id] != 0)
-				{
-					int ind = map.get(id);
-					int outR = clamp(x1[ind]);
-					int outG = clamp(x2[ind]);
-					int outB = clamp(x3[ind]);
-					
-					outpixels[id] = (outR & 0xff) << 16 + (outG & 0xff) << 8 + (outB & 0xff); 
-				}
-			}
-		}
+		out = solver.updateImage();
 		
 		return out;
-	}
-	
-	private int clamp(double v)
-	{
-		if (v < 0)
-		{
-			return 0;
-		}
-		else if (v > 1.0)
-		{
-			return 255;
-		}
-		else
-		{
-			return (int)(v * 255.0);
-		}
 	}
 
 	public void showAbout()
@@ -452,10 +456,14 @@ public class Poisson_Editing implements PlugIn
 		new ImageJ();
 
 		// open the Clown sample
-		//ImagePlus image = IJ.openImage("http://cs2.swfc.edu.cn/~zyl/wp-content/uploads/2015/05/strawberry.jpg");
-		//image.show();
+		ImagePlus image1 = IJ.openImage("http://cs2.swfc.edu.cn/~zyl/wp-content/uploads/2015/07/F16.png");
+		ImagePlus image2 = IJ.openImage("http://cs2.swfc.edu.cn/~zyl/wp-content/uploads/2015/07/canyon.png");
+		ImagePlus image3 = IJ.openImage("http://cs2.swfc.edu.cn/~zyl/wp-content/uploads/2015/07/F16Mask.png");
 		
-
+		image1.show();
+		image2.show();
+		image3.show();
+		
 		// run the plugin
 		IJ.runPlugIn(clazz.getName(), "");
 	}
